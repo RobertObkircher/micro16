@@ -14,6 +14,8 @@ import           Data.Char
 import           Data.Bits
 import           Data.List (foldl')
 import           Data.Maybe
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import           Data.Void
 import           Data.Word             (Word8, Word32)
 import           Text.Megaparsec
@@ -406,8 +408,10 @@ someFunc = do
 --   print code
   case parse m16Parser fileName code of
     Right x -> do
-      writeFile "compiled-by-haskell.txt" $ unlines $ fmap (showBin . toBits) x
-      putStrLn $ unlines $ fmap printInstr x
+      let labels = collectLabels x
+      let replacedAddrs = fmap (replaceAddr labels) x
+      writeFile "compiled-by-haskell.txt" $ unlines $ fmap (showBin . toBits) replacedAddrs
+      putStrLn $ unlines $ fmap printInstr replacedAddrs
     Left x  -> print x
   where
     printInstr i = showBin (toBits i) ++ " " ++ show i
@@ -418,3 +422,14 @@ showBin w = foldl' (flip $ (:) . bitChar . testBit w) "" [0..31]
     bitChar False = '0'
     bitChar True = '1'
 
+collectLabels :: [Instruction] -> Map String Int
+collectLabels = foldl' addLabel Map.empty . zip [0..]
+  where
+    addLabel map (line, Instruction{iLabel}) = case iLabel of
+      Just s -> Map.insert s line map
+      Nothing -> map
+
+replaceAddr :: Map String Int -> Instruction -> Instruction
+replaceAddr map i@Instruction{address} = case address of
+  (Just (LabelAddr s)) -> i {address = Just (LineAddr (map Map.! s))}
+  _ -> i
