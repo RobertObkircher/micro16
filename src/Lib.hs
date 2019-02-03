@@ -36,8 +36,6 @@ data Instruction = Instruction
   , mbr          :: Maybe Bool
   , mar          :: Maybe Bool
   , memoryOp     :: Maybe MemoryOp
-  , readWrite    :: Maybe Bool
-  , memorySelect :: Maybe Bool
   , enableSBus   :: Maybe Bool
   , sBus         :: Maybe WritableReg
   , bBus         :: Maybe Reg
@@ -59,12 +57,11 @@ instance ToBits Instruction where
     , toBits shifter
     , b mbr 24
     , b mar 23
-    , b readWrite 22
-    , b memorySelect 21
+    , toBits memoryOp `shift` 21
     , b enableSBus 20
     , toBits sBus `shift` 16
---     , toBits bBus `shift` 12
---     , toBits aBus `shift` 8
+    , toBits bBus `shift` 12
+    , toBits aBus `shift` 8
     , aluBusBits alu `shift` 8 -- TODO remove?
     , toBits address
     ]
@@ -81,9 +78,8 @@ instance ToBits Instruction where
       aluBusBits _ = 0
 
 
-
 emptyInstruction :: Instruction
-emptyInstruction = Instruction Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyInstruction = Instruction Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 
 data Alu
@@ -164,6 +160,10 @@ parseAddr = try pLineAddr <|> pLabelAddr
 newtype MemoryOp = MemoryOp
   Bool -- ^ True read, False write
   deriving (Eq, Show)
+
+instance ToBits MemoryOp where
+  toBits (MemoryOp True) = 3
+  toBits (MemoryOp False) = 1
 
 data Reg
   = Zero
@@ -325,14 +325,16 @@ pSkipSemicolon i = do
 
 pAssignMAR :: Instruction -> Parser Instruction
 pAssignMAR i@Instruction {alu} = do
-  reg <- symbol "MAR" <* symbol "<-"
-  pAluShifter False i { mar = Just True }
+  void $ symbol "MAR"
+  void $ symbol "<-"
+  reg <- pReg
+  return i { mar = Just True, bBus = Just reg }
 
 
 pAssignMBR :: Instruction -> Parser Instruction
 pAssignMBR i@Instruction {sBus} = do
   void $ symbol "MBR" >> symbol "<-"
-  pAluShifter True i { mbr = Just True }
+  pAluShifter i { mbr = Just True }
 
 
 pAssignReg :: Instruction -> Parser Instruction
@@ -340,7 +342,7 @@ pAssignReg i@Instruction {sBus} = do
   reg <- pWritableReg <* symbol "<-"
   case sBus of
     Just r | r /= reg -> fail "sBus already set"
-    _ -> pAluShifter True i { sBus = Just reg, enableSBus = Just True }
+    _ -> pAluShifter i { sBus = Just reg, enableSBus = Just True }
 
 pNoAssign :: Instruction -> Parser Instruction
 pNoAssign i@Instruction {alu} = do
@@ -381,12 +383,12 @@ pLabel = \case
 ----------------------------------------------------------------------------------------
 
 
-pAluShifter :: Bool -> Instruction -> Parser Instruction
-pAluShifter checkAluAlreadySet i@Instruction {alu} = do
+pAluShifter :: Instruction -> Parser Instruction
+pAluShifter i@Instruction {alu} = do
   s <- pShifter (shifter i)
   pa <- pAlu
   case alu of
-    Just a | a /= pa && checkAluAlreadySet-> fail "alu already set"
+    Just a | a /= pa -> fail "alu already set"
     _ -> return i {shifter = Just s, alu = Just pa}
 
 pShifter :: Maybe Shifter -> Parser Shifter
