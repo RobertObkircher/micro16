@@ -3,6 +3,7 @@
   <component name="HaskellBuildOptions">
     <ghcPath>/usr/bin/ghc</ghcPath>
     <cabalPath>/usr/bin/cabal</cabalPath>
+    <useStack>true</useStack>
     <stackPath>/usr/bin/stack</stackPath>
   </component>
 </project>
