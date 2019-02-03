@@ -51,7 +51,7 @@ instance ToBits a => ToBits (Maybe a) where
 
 instance ToBits Instruction where
   toBits Instruction{..} = foldl' (.|.) 0
-    [ b aMux 31
+    [ bAMux alu `shift` 31
     , toBits cond
     , toBits alu
     , toBits shifter
@@ -76,6 +76,13 @@ instance ToBits Instruction where
       aluBusBits (Just (Plus a b)) = toBits b `shift` 4 .|. toBits a
       aluBusBits (Just (And a b)) = toBits b `shift` 4 .|. toBits a
       aluBusBits _ = 0
+
+      bAMux :: Maybe Alu -> Word32
+      bAMux (Just (Id MBR)) = 1
+      bAMux (Just (Not MBR)) = 1
+      bAMux (Just (Plus MBR _)) = 1
+      bAMux (Just (And MBR _)) = 1
+      bAMux _ = 0
 
 
 emptyInstruction :: Instruction
