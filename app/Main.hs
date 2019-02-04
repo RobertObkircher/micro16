@@ -1,6 +1,8 @@
 module Main where
 
-import Compiler
+import qualified Compiler as C
+import qualified Simulator as S
+import qualified Visualizer as V
 
 main :: IO ()
-main = someFunc
+main = C.someFunc -- >> V.visualize

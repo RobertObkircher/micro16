@@ -2,9 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Compiler
-  ( someFunc
-  ) where
+module Compiler where
 
 -- https://markkarpov.com/megaparsec/parsing-simple-imperative-language.html
 
@@ -414,7 +412,6 @@ someFunc = do
   let fileName = "code.txt"
   putStrLn $ "File: " ++ fileName
   code <- readFile fileName
---   print code
   case parse m16Parser fileName code of
     Right x -> do
       let labels = collectLabels x
