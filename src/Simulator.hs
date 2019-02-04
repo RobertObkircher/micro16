@@ -59,6 +59,13 @@ data AluOutput = AluOutput
   , z :: Bool
   }
 
+aluOutput :: Word16 -> AluOutput
+aluOutput x = AluOutput
+  { bits = x
+  , n = x < 0
+  , z = x == 0
+  }
+
 tick :: Micro16State -> Micro16State
 tick s@Micro16State {clock} = doTick newClock s {clock = newClock}
   where
@@ -66,7 +73,7 @@ tick s@Micro16State {clock} = doTick newClock s {clock = newClock}
     doTick :: Clock -> Micro16State -> Micro16State
     doTick = \case
       Phase1 -> tickRegisters . tickABusDecoder . tickBBusDecoder . tickMir
-      Phase2 -> id
+      Phase2 -> tickMicroSeqLogic . tickShifter . tickAlu . tickAMux . tickABus . tickBBus
       Phase3 -> id
       Phase4 -> id
 
@@ -127,3 +134,45 @@ tickRegisters s@Micro16State{aBusDecoder, bBusDecoder, registers} = s
 --
 -- Phase 2
 --
+tickBBus :: Micro16State -> Micro16State
+tickBBus s@Micro16State {registers} = s {bBus = toBBus registers}
+
+tickABus :: Micro16State -> Micro16State
+tickABus s@Micro16State {registers} = s {aBus = toABus registers}
+
+tickAMux :: Micro16State -> Micro16State
+tickAMux s@Micro16State {aBus, mar, mir} = s {aMux = newValue}
+  where
+    newValue = if testBit mir 31
+      then mar
+      else aBus
+
+tickAlu :: Micro16State -> Micro16State
+tickAlu s@Micro16State {aMux, bBus, mir} = s {alu = newOutput}
+  where
+    newOutput = aluOutput $ value $ (mir `shiftR` 27) .&. 3
+    value = \case
+      0 -> aMux
+      1 -> aMux + bBus
+      2 -> aMux .&. bBus
+      3 -> complement aMux
+
+tickShifter :: Micro16State -> Micro16State
+tickShifter s@Micro16State {alu, mir} = s {shifter = newOutput}
+  where
+    newOutput = value $ (mir `shiftR` 25) .&. 3
+    b = bits alu
+    value = \case
+      0 -> b
+      1 -> b `shiftL` 1
+      2 -> b `shiftR` 1
+
+tickMicroSeqLogic :: Micro16State -> Micro16State
+tickMicroSeqLogic s@Micro16State {alu, mir} = s {microSeqLogic = newOutput}
+  where
+    newOutput = value $ (mir `shiftR` 29) .&. 3
+    value = \case
+      0 -> False
+      1 -> n alu
+      2 -> z alu
+      3 -> True
