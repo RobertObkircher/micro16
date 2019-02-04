@@ -74,7 +74,7 @@ tick s@Micro16State {clock} = doTick newClock s {clock = newClock}
     doTick = \case
       Phase1 -> tickRegisters . tickABusDecoder . tickBBusDecoder . tickMir
       Phase2 -> tickMicroSeqLogic . tickShifter . tickAlu . tickAMux . tickABus . tickBBus
-      Phase3 -> id
+      Phase3 -> tickMar . tickMbr
       Phase4 -> id
 
 --
@@ -176,3 +176,22 @@ tickMicroSeqLogic s@Micro16State {alu, mir} = s {microSeqLogic = newOutput}
       1 -> n alu
       2 -> z alu
       3 -> True
+
+--
+-- Phase 3
+--
+
+tickMbr :: Micro16State -> Micro16State
+tickMbr s@Micro16State {shifter, mir, mbr} = s {mbr = newOutput}
+  where
+    newOutput = if testBit mir 24
+      then shifter
+      else mbr
+
+tickMar :: Micro16State -> Micro16State
+tickMar s@Micro16State {shifter, mir, mar} = s {mar = newOutput}
+  where
+    newOutput = if testBit mir 23
+      then shifter
+      else mar
+
