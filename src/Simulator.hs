@@ -30,6 +30,33 @@ data Micro16State = Micro16State
   , mar :: Word16
   }
 
+makeMicro16State :: [Word32] -> Micro16State
+makeMicro16State x = Micro16State
+  { sBusDecoder = C.R0
+  , bBusDecoder = C.Zero
+  , aBusDecoder = C.Zero
+  , clock = Phase4
+  , registers = Registers
+    { toABus = 0
+    , toBBus = 0
+    , state = Map.fromList $ zip [C.PC ,C.R0 ,C.R1 ,C.R2 ,C.R3 ,C.R4 ,C.R5 ,C.R6 ,C.R7 ,C.R8 ,C.R9 ,C.R10 ,C.AC] (repeat 0)
+    }
+  , aBus = 0
+  , bBus = 0
+  , aMux = 0
+  , mic = 0
+  , controlStore = ControlStore
+    { instructions = x ++ replicate (256 - length x) 0
+    , controlStoreOutput = 0
+    }
+  , mir = 0
+  , microSeqLogic = False
+  , alu = AluOutput 0 False False
+  , shifter = 0
+  , mbr = 0
+  , mar = 0
+  }
+
 data Clock = Phase1 | Phase2 | Phase3 | Phase4
 
 nextPhase :: Clock -> Clock
@@ -38,9 +65,6 @@ nextPhase = \case
   Phase2 -> Phase3
   Phase3 -> Phase4
   Phase4 -> Phase1
-
-updateClock :: Micro16State -> Micro16State
-updateClock s@Micro16State{clock} = s {clock = nextPhase clock}
 
 data Registers = Registers
   { toABus :: Word16 -- ^ 16 bits used
