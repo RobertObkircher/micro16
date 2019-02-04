@@ -211,7 +211,7 @@ data WritableReg
   | R9
   | R10
   | AC
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 instance ToBits WritableReg where
   toBits PC = 3
