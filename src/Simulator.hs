@@ -49,7 +49,7 @@ data Registers = Registers
   }
 
 data ControlStore = ControlStore
-  { instructions :: [Int]
+  { instructions :: [Word32]
   , controlStoreOutput :: Word32
   }
 
@@ -75,7 +75,7 @@ tick s@Micro16State {clock} = doTick newClock s {clock = newClock}
       Phase1 -> tickRegisters . tickABusDecoder . tickBBusDecoder . tickMir
       Phase2 -> tickMicroSeqLogic . tickShifter . tickAlu . tickAMux . tickABus . tickBBus
       Phase3 -> tickMar . tickMbr
-      Phase4 -> id
+      Phase4 -> tickControlStore . tickMic . tickSBus . tickSBusDecoder
 
 --
 -- Phase 1
@@ -195,3 +195,27 @@ tickMar s@Micro16State {shifter, mir, mar} = s {mar = newOutput}
       then shifter
       else mar
 
+--
+-- Phase 4
+--
+
+tickSBusDecoder :: Micro16State -> Micro16State
+tickSBusDecoder s@Micro16State{mir} = s {sBusDecoder = writableRegFromMir (regAtOffset 16 mir)}
+
+tickSBus :: Micro16State -> Micro16State
+tickSBus s@Micro16State{sBusDecoder, registers, shifter} = s {registers = registers {state = newState}}
+  where
+    newState = Map.insert sBusDecoder shifter (state registers)
+
+tickMic :: Micro16State -> Micro16State
+tickMic s@Micro16State{microSeqLogic, mic, mir} = s {mic = newCounter}
+  where
+    newCounter = if microSeqLogic
+      then fromInteger $ toInteger (mir .&. 255)
+      else mic + 1
+
+
+tickControlStore :: Micro16State -> Micro16State
+tickControlStore s@Micro16State{mic, controlStore} = s {controlStore = newControlStore}
+  where
+    newControlStore = controlStore {controlStoreOutput = instructions controlStore !! fromIntegral mic}
