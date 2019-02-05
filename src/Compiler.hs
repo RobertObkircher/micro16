@@ -409,6 +409,17 @@ pShifter shifter = do
 
 newtype Microcode = Microcode [Word32]
 
+compileAufgabe6 :: IO (Maybe Microcode)
+compileAufgabe6 = do
+  let fileName = "programs/aufgabe6.txt"
+  putStrLn $ "File: " ++ fileName
+  code <- readFile fileName
+  case parse m16Parser fileName code of
+    Right x -> do
+      let labels = collectLabels x
+      return $ Just $ Microcode $ fmap (toBits . replaceAddr labels) x
+    Left x  -> print x >> return Nothing
+
 someFunc :: IO (Maybe Microcode)
 someFunc = do
   let fileName = "code.txt"

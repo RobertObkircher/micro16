@@ -12,11 +12,24 @@ import Data.Word
 
 simulateAufgabe6 :: C.Microcode -> IO ()
 simulateAufgabe6 (C.Microcode instructions) = do
-  let initialState = setWritableReg C.R1 100 $ makeMicro16State instructions
-      result = iterate tick initialState !! length instructions
-  print $ state (registers result)
+  let initialState = setWritableReg C.R0 10 $ makeMicro16State instructions
+      steps = takeWhile (not . atLastInstruction) $ iterate tick initialState
+      result = last steps
+  print4 $ fmap registers steps
+  putStrLn $ "Result: " ++ show result
   where
     setWritableReg k v s@Micro16State{registers} = s {registers = registers {state = Map.insert k v (state registers)}}
+    atLastInstruction i = (length instructions == fromIntegral (mic i)) && clock i == Phase4
+    print4 [] = return ()
+    print4 (a:b:c:d:xs) = do
+      print a
+      print b
+      print c
+      print d
+      putStrLn ""
+      print4 xs
+    print4 x = putStrLn $ "This should never happen " ++ show x
+
 
 -- Stores the current outputs for each component
 data Micro16State = Micro16State
@@ -36,7 +49,7 @@ data Micro16State = Micro16State
   , shifter :: Word16
   , mbr :: Word16 -- ^ TODO
   , mar :: Word16
-  }
+  } deriving (Show)
 
 makeMicro16State :: [Word32] -> Micro16State
 makeMicro16State x = Micro16State
@@ -66,6 +79,7 @@ makeMicro16State x = Micro16State
   }
 
 data Clock = Phase1 | Phase2 | Phase3 | Phase4
+  deriving (Eq, Show)
 
 nextPhase :: Clock -> Clock
 nextPhase = \case
@@ -78,23 +92,23 @@ data Registers = Registers
   { toABus :: Word16 -- ^ 16 bits used
   , toBBus :: Word16 -- ^ 16 bits used
   , state :: Map C.WritableReg Word16
-  }
+  } deriving (Show)
 
 data ControlStore = ControlStore
   { instructions :: [Word32]
   , controlStoreOutput :: Word32
-  }
+  } deriving (Show)
 
 data AluOutput = AluOutput
   { bits :: Word16
   , n :: Bool
   , z :: Bool
-  }
+  } deriving (Show)
 
 aluOutput :: Word16 -> AluOutput
 aluOutput x = AluOutput
   { bits = x
-  , n = x < 0
+  , n = testBit x 15
   , z = x == 0
   }
 

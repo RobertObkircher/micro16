@@ -6,7 +6,7 @@ import qualified Visualizer as V
 
 main :: IO ()
 main = do
-  microcode <- C.someFunc
+  microcode <- C.compileAufgabe6
   case microcode of
     Just m -> S.simulateAufgabe6 m
     Nothing -> return ()
