@@ -10,9 +10,17 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Word
 
+simulateAufgabe6 :: C.Microcode -> IO ()
+simulateAufgabe6 (C.Microcode instructions) = do
+  let initialState = setWritableReg C.R1 100 $ makeMicro16State instructions
+      result = iterate tick initialState !! length instructions
+  print $ state (registers result)
+  where
+    setWritableReg k v s@Micro16State{registers} = s {registers = registers {state = Map.insert k v (state registers)}}
+
 -- Stores the current outputs for each component
 data Micro16State = Micro16State
-  { sBusDecoder :: C.WritableReg
+  { sBusDecoder :: Maybe C.WritableReg
   , bBusDecoder :: C.Reg
   , aBusDecoder :: C.Reg
   , clock :: Clock
@@ -32,7 +40,7 @@ data Micro16State = Micro16State
 
 makeMicro16State :: [Word32] -> Micro16State
 makeMicro16State x = Micro16State
-  { sBusDecoder = C.R0
+  { sBusDecoder = Nothing
   , bBusDecoder = C.Zero
   , aBusDecoder = C.Zero
   , clock = Phase4
@@ -224,12 +232,15 @@ tickMar s@Micro16State {shifter, mir, mar} = s {mar = newOutput}
 --
 
 tickSBusDecoder :: Micro16State -> Micro16State
-tickSBusDecoder s@Micro16State{mir} = s {sBusDecoder = writableRegFromMir (regAtOffset 16 mir)}
+tickSBusDecoder s@Micro16State{mir} = s {sBusDecoder = newOutput}
+  where
+    newState = writableRegFromMir (regAtOffset 16 mir)
+    newOutput = if testBit mir 20 then Just newState else Nothing
 
 tickSBus :: Micro16State -> Micro16State
-tickSBus s@Micro16State{sBusDecoder, registers, shifter} = s {registers = registers {state = newState}}
-  where
-    newState = Map.insert sBusDecoder shifter (state registers)
+tickSBus s@Micro16State{sBusDecoder, registers, shifter} = case sBusDecoder of
+  Just dec -> s {registers = registers {state = Map.insert dec shifter (state registers)}}
+  Nothing -> s
 
 tickMic :: Micro16State -> Micro16State
 tickMic s@Micro16State{microSeqLogic, mic, mir} = s {mic = newCounter}

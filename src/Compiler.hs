@@ -407,7 +407,9 @@ pShifter shifter = do
     rsh = symbol "rsh" >> return ShiftRight
 
 
-someFunc :: IO ()
+newtype Microcode = Microcode [Word32]
+
+someFunc :: IO (Maybe Microcode)
 someFunc = do
   let fileName = "code.txt"
   putStrLn $ "File: " ++ fileName
@@ -418,7 +420,8 @@ someFunc = do
       let replacedAddrs = fmap (replaceAddr labels) x
       writeFile "compiled-by-haskell.txt" $ unlines $ fmap (showBin . toBits) replacedAddrs
       putStrLn $ unlines $ fmap printInstr replacedAddrs
-    Left x  -> print x
+      return $ Just (Microcode $ fmap toBits replacedAddrs)
+    Left x  -> print x >> return Nothing
   where
     printInstr i = showBin (toBits i) ++ " " ++ show i
 

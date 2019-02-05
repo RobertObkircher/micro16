@@ -5,4 +5,8 @@ import qualified Simulator as S
 import qualified Visualizer as V
 
 main :: IO ()
-main = C.someFunc -- >> V.visualize
+main = do
+  microcode <- C.someFunc
+  case microcode of
+    Just m -> S.simulateAufgabe6 m
+    Nothing -> return ()
