@@ -1,0 +1,20 @@
+### Aufgabe 9 ###
+# AC = -8
+AC <- lsh ((-1) + (-1))
+AC <- AC + AC
+
+# key R3, message R4
+MAR <- R0 rd :loop
+R0 <- R0 + 1; rd
+R3 <- MBR; MAR <- R1 rd
+R1 <- R1 + 1; rd
+R4 <- MBR
+R2 <- 1 + R2; MAR <- R2
+
+# xor = (a & -b) or (-a & b)
+R5 <- ~R4
+R5 <- R5 & R3
+R6 <- ~R3
+R6 <- R6 & R4
+MBR <- R5 + R6; wr
+AC <- AC + 1; wr; if N goto .loop

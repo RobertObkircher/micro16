@@ -1,0 +1,46 @@
+### Aufgabe 7 ###
+# AC = 10
+AC <- lsh (1 + 1)
+AC <- lsh (AC)
+AC <- AC + 1
+AC <- AC + 1
+
+R1 <- 0
+R2 <- 0
+R3 <- 0
+R4 <- 0
+R5 <- 0
+
+AC if Z goto .end :loop
+AC <- AC + (-1)
+
+# Store xor bit in R6
+R6 <- R5
+
+# Store next bit in R7
+R7 <- R0 & 1
+R0 <- rsh (R0)
+
+R5 <- R6 + R4
+R5 <- R5 & 1
+
+R4 <- R3
+
+R3 <- R6 + R2
+R3 <- R3 & 1
+
+R2 <- R1
+
+R1 <- R6 + R7
+R1 <- R1 & 1
+
+goto .loop
+
+
+# Store result in R0
+:end
+R0 <- lsh (R5)
+R0 <- lsh (R0 + R4)
+R0 <- lsh (R0 + R3)
+R0 <- lsh (R0 + R2)
+R0 <- R0 + R1

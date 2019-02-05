@@ -1,0 +1,14 @@
+### Aufgabe 8 ###
+MAR <- -1 rd
+rd
+R0 <- MBR
+R1 <- 1
+
+R0 if Z goto .end :loop
+R2 <- R0 & 1
+R1 <- R1 + R2
+R1 <- R1 & 1
+R0 <- rsh (R0)
+goto .loop
+
+:end

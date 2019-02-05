@@ -1,0 +1,28 @@
+### Aufgabe 5 ###
+#R0 = 0..15
+
+# 0x100 in R4
+R4 <- lsh (1 + 1)
+R4 <- lsh (R4 + R4)
+R4 <- lsh (R4 + R4)
+R4 <- lsh (R4 + R4)
+
+# Bit Mask in R1:
+R1 <- 1
+R0 if Z goto .read :loop 
+R1 <- lsh (R1)
+R0 <- R0 + (-1)
+goto .loop
+
+# Read into R2
+MAR <- R4 rd :read
+rd
+R2 <- MBR
+R9 <- R2
+
+# Write flipped bit
+R3 <- R2 & R1 if Z goto .then
+R3 <- ~R3
+MBR <- R2 & R3 wr goto .write
+MBR <- R2 + R1 wr :then
+wr :write

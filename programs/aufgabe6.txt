@@ -1,0 +1,35 @@
+### Aufgabe 6 ###
+# sum = n * (min + max) / 2
+#          = max * (1 + max) / 2
+#          = rsh (max + max * max)
+# R0: 1..200
+
+# first compute max * max in R1
+R1 <- 0   # Result
+R2 <- -1
+R3 <- R0 
+
+# For each bit in first position:
+R2 <- lsh (R2) :loop
+R3 <- lsh (R3)
+
+# Check if done
+R2 if Z goto .end
+
+# Shift result
+R1 <- lsh (R1)
+
+# Nothing to do if zero
+(~R3); if N goto .loop
+
+# Add R0
+R1 <- R1 + R0
+goto .loop
+
+# Final result
+R1 <- rsh (R0 + R1) :end
+
+
+
+
+

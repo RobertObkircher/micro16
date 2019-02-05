@@ -1,0 +1,7 @@
+# bsp 1
+InputMemory,0xFFFF,11010
+Output,*,*,0
+
+# bsp 2
+InputMemory,0xFFFF,1110111
+Output,*,*,1
