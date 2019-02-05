@@ -1,7 +1,7 @@
 {-# LANGUAGE  LambdaCase #-}
 {-# LANGUAGE  NamedFieldPuns #-}
 
-module Simulator where
+module Simulation where
 
 import qualified Compiler as C
 import           Data.Bits
@@ -10,13 +10,14 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Word
 
-simulateAufgabe6 :: C.Microcode -> IO ()
+simulateAufgabe6 :: C.Microcode -> IO [Micro16State]
 simulateAufgabe6 (C.Microcode instructions) = do
   let initialState = setWritableReg C.R0 10 $ makeMicro16State instructions
       steps = takeWhile (not . atLastInstruction) $ iterate tick initialState
       result = last steps
   print4 $ fmap registers steps
   putStrLn $ "Result: " ++ show result
+  return steps
   where
     setWritableReg k v s@Micro16State{registers} = s {registers = registers {state = Map.insert k v (state registers)}}
     atLastInstruction i = (length instructions == fromIntegral (mic i)) && clock i == Phase4

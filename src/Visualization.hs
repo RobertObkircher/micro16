@@ -1,19 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Visualizer where
+module Visualization where
 
 import qualified Compiler as C
 import Control.Concurrent
 import Control.Monad
 import qualified Data.ByteString as B
+import Data.IORef
 import qualified Graphics.Rendering.OpenGL as GL
 import Graphics.Rendering.OpenGL (($=))
 import qualified Graphics.UI.GLFW as GLFW
+import qualified Simulation as S
 import System.Exit (exitFailure)
 import System.IO
 
-visualize :: IO ()
-visualize = do
+visualize :: [S.Micro16State] -> IO ()
+visualize states = do
   GLFW.setErrorCallback (Just errorCallback)
   True <- GLFW.init
   Just window <- GLFW.createWindow 800 600 "Micro16 Simulator" Nothing Nothing
@@ -24,13 +26,20 @@ visualize = do
   GL.bindBuffer GL.ArrayBuffer $= Just b
   GL.vertexAttribArray (GL.AttribLocation 0) $= GL.Enabled
   GL.vertexAttribArray (GL.AttribLocation 1) $= GL.Enabled
+  currentStateIndex <- newIORef 0
   whileM_ (not <$> GLFW.windowShouldClose window) $ do
     GL.clear [GL.ColorBuffer]
+    index <- readIORef currentStateIndex
+    writeIORef currentStateIndex ((index + 1) `mod` length states)
+    renderState $ states !! index
     GLFW.swapBuffers window
     threadDelay (1000 * 1000)
     GLFW.pollEvents
   GLFW.destroyWindow window
   GLFW.terminate
+
+renderState :: S.Micro16State -> IO ()
+renderState state = return ()
 
 whileM_ :: Monad m => m Bool -> m a -> m ()
 whileM_ p f = go
